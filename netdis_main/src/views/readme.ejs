@@ -1,0 +1,34 @@
+<div class="readme pannels">
+   <pre>
+      <%=datas.readme%>
+   </pre>
+   <div class="md_content pannel p4"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script defer>
+   setTimeout(() => {
+
+      const readme = document.querySelector(".readme pre")
+      const content = document.querySelector(".md_content");
+      const str = readme.innerHTML.substring(5)
+      content.innerHTML = marked.parse(str);
+      const anchors = content.querySelectorAll("h1,h2,h3,h4,h5,h6");
+      anchors.forEach(anchor => {
+         const text = anchor.innerText;
+         const slug = text.split(" ").join("_").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\w\s]/gi, '')
+         anchor.setAttribute("id", slug)
+         anchor.innerHTML = `<a href="#${slug}" class="copy">#</a>${text}`
+      })
+      document.querySelectorAll('code[class^="language-"]').forEach(element => {
+         let classList = Array.from(element.classList);
+         let languageClass = classList.find(cls => cls.startsWith("language-"));
+
+         if (languageClass) {
+            let language = languageClass.replace("language-", ""); // Extrait le nom du langage
+            element.parentNode.setAttribute("data-lang", language)
+         }
+      });
+      readme.style.display = "none";
+      hljs.highlightAll();
+   }, 20);
+</script>

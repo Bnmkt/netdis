@@ -1,0 +1,274 @@
+<div class="pannels home">
+   <div class="pannel p4" id="main_graph">
+      <h3 class="title panel-title">État réseau</h3>
+      <!-- <p><i>Ping sur "simulation locale"</i></p> -->
+      <!-- <input type="range" name="rangeTime" id="rangeTime" min="0" max="1000" step="10" value="1000" data-max="1000"
+         data-value="1000"> -->
+      <p class="title">Ping sur <span id="current_host">
+            <%=datas.host%>
+         </span> toutes les <%=(datas.freq /1000)>1?datas.freq /1000+" ":""%>secondes
+            <br><br><span class="italic">
+               (affichage des dernières <%=functions.convertSecondstoTime(Math.round((datas.freq /1000)*datas.maxbar))%>
+                  )
+            </span>
+      </p>
+      <canvas id="dis"></canvas>
+   </div>
+   <div class="pannel p2">
+      <h3 class="title panel-title">Perturbations hebdomadaire</h3>
+      <canvas id="dis_recent"></canvas>
+
+   </div>
+   <div class="pannel p2">
+      <h3 class="title panel-title">Répartition journalière</h3>
+      <canvas id="dis_journa"></canvas>
+   </div>
+   <div class="pannel p6">
+      <h3 class="title panel-title">Données supplémentaires</h3>
+      <div class="pannels">
+         <div class="pannel p3">
+            <p class="title">Hotes récents</p>
+            <canvas id="chart_hosts"></canvas>
+         </div>
+         <div class="pannel p3">
+            <p class="title">Infos diverse</p>
+            <dl>
+               <dt>Nombre d'entrée globale</dt>
+               <dd>
+                  <%=(datas.stats && datas.stats.nb_tot)? new Intl.NumberFormat().format(datas.stats.nb_tot):0%> entrées
+               </dd>
+               <dt>Poids total théorique</dt>
+               <dd class="cut">
+                  <%=(datas.stats && datas.stats.nb_tot)? new Intl.NumberFormat("fr",{ notation: "compact" ,
+                     style: "unit" , unit: "byte" , unitDisplay: "narrow" ,maximumSignificantDigits: 4
+                     }).format(datas.stats.nb_tot*26.25*0.976):0%>
+               </dd>
+
+               <dt>Nombre d'entrées du jour</dt>
+               <dd>
+                  <%=(datas.stats && datas.stats.nb_jour)?new Intl.NumberFormat().format(datas.stats.nb_jour):0%>
+                     entrées
+               </dd>
+               <dt>Poids total théorique</dt>
+               <dd class="cut">
+                  <%=(datas.stats && datas.stats.nb_jour)?new Intl.NumberFormat("en",{ notation: "compact" ,
+                     style: "unit" , unit: "byte" , unitDisplay: "narrow" ,maximumSignificantDigits: 4
+                     }).format(datas.stats.nb_jour*26.25*0.976):0%>
+               </dd>
+
+               <dt>Plus grande valeur globale</dt>
+               <dd>
+                  <%=datas.stats?new Intl.NumberFormat().format(datas.stats.max_tot):0%> ms
+               </dd>
+
+               <dt>Sur l'hote</dt>
+               <dd>
+                  <%=datas.stats?datas.stats.max_tot_host:""%>
+               </dd>
+
+               <dt>Date</dt>
+               <dd class="cut">
+                  <%=datas.stats?Intl.DateTimeFormat("fr",
+                     {dateStyle:"short",timeStyle:"short"}).format(datas.stats.max_tot_timestamp):0%>
+               </dd>
+
+               <dt>Plus grande valeur du jour</dt>
+               <dd>
+                  <%=new Intl.NumberFormat().format(datas.stats?datas.stats.max_jour:0)%> ms
+               </dd>
+
+               <dt>Sur l'hote</dt>
+               <dd class="">
+                  <%=datas.stats?datas.stats.max_jour_host:""%>
+               </dd>
+               <dt>Heure</dt>
+               <dd class="cut">
+                  <%=Intl.DateTimeFormat("fr",
+                     {timeStyle:"short"}).format(datas.stats?datas.stats.max_jour_timestamp:0)%>
+               </dd>
+
+               <dt>Plus grande coupure</dt>
+               <dd class="cut">
+                  <p class="duration" data-duration="<%=datas.stats?datas.stats.biggest_cut:0%>"></p>
+               </dd>
+
+               <dt>Ce service tourne depuis</dt>
+               <dd class="cut">
+                  <p class="duration" data-duration="<%=process.uptime()%>"></p>
+               </dd>
+            </dl>
+         </div>
+      </div>
+   </div>
+</div>
+<script>
+   const maxbar = <%=datas.maxbar%>
+      document.body.onload = () => {
+
+         const evtSource = new EventSource('/getLastRecord');
+         const current_host = document.getElementById("current_host");
+         evtSource.onmessage = (e) => {
+            const datas = e.data
+            const lastRecords = JSON.parse(datas);
+
+            const value = lastRecords.value == "unknown" ? -10 : lastRecords.value
+            addData(chart, formatTime(lastRecords.timestamp), value)
+            if (chart.data.labels.length >= maxbar) removeData(chart, "shift")
+            const current_host_data = current_host.querySelector(".host")
+
+            if (current_host_data?.innerHTML != lastRecords.host) current_host.innerHTML = `<span class="host">${lastRecords.host}</span>`
+         }
+         evtSource.onerror = (e) => {
+            console.log(e);
+
+         }
+         const dis = document.getElementById("dis")
+         const exampleData = {
+            "datas": []
+         }
+         const d = Date.now()
+         const labels = exampleData.datas.map(r => formatTime(r.time));
+         const datas = exampleData.datas.map(r => r.value)
+         const bg_norm = "<%=datas.keys.csecduo%>";
+         const bg_warn = "<%=datas.keys.csecuno%>";
+         const bg_err = "<%=datas.keys.csectrio%>";
+         const backgroundSet = {
+            bg_err, bg_norm, bg_warn, limit: 50
+         }
+         const backgroundColor = datas.map(v => v > 0 ? v > 20 ? bg_warn : bg_norm : bg_err)
+         const options = {
+            scales: {
+               xAxes: [{
+                  ticks: {
+                     display: false,
+                     source: 'auto',
+                     autoSkip: true,
+                     maxTicksLimit: 5
+                  }
+               }],
+               yAxes: [{
+                  ticks: {
+                     beginAtZero: false,
+                     suggestedMin: -5,
+                     suggestedMax: 100
+                  }
+               }]
+            },
+            backgroundColor: backgroundColor,
+         }
+         const chart = createGraph(dis, datas, labels, options)
+         chart.data.datasets[0]["backgroundSet"] = backgroundSet
+
+         for (let i = 0; i < maxbar; i++) {
+            addData(chart, "", 0)
+         }
+
+         const dis_canvas = document.getElementById("dis_recent")
+         const dis_entries = JSON.parse(`<%-JSON.stringify(datas.test)%>`);
+         const n_disconnect = dis_entries.filter((entry) => entry.moyenne_valeur == 0);
+         const n_disrupt = dis_entries.length - n_disconnect.length
+         const n_highDisrupt = dis_entries.filter(entry => entry.moyenne_valeur >= 200).length
+         const dis_datas = [n_disrupt - n_highDisrupt, n_highDisrupt, n_disconnect.length];
+         const dis_labels = ["Ping (>100)", "Ping haut (>200)", "Coupures"]
+         const dis_options = {
+            type: "polarArea",
+            backgroundColor: [
+               "<%=datas.keys.csecuno%>",
+               "<%=datas.keys.csecduo%>",
+               "<%=datas.keys.csectrio%>"
+            ]
+         }
+
+         // const dis_chart = createGraph(dis_canvas, dis_datas, dis_labels, dis_options);
+
+         // const chart_host = document.getElementById("chart_host")
+         const chart2 = new Chart(dis_canvas, {
+            type: "doughnut",
+            data: {
+               labels: dis_labels,
+               datasets: [{
+                  label: "test",
+                  data: dis_datas,
+                  backgroundColor: dis_options.backgroundColor,
+                  borderWidth: 0
+               }]
+            },
+            options: {
+               title: "Taux de perturbation sur 7 jours",
+               legend: {
+                  position: "bottom",
+                  align: "center"
+               }
+            }
+         })
+         const journa_canvas = document.getElementById("dis_journa");
+         const journa_datas = JSON.parse(`<%-JSON.stringify(datas.daily)%>`);
+         const j_tot = journa_datas.nb_tot;
+         const J_cut = (Math.round(journa_datas.nb_cut / j_tot * 10000)) / 100;
+         const J_norm = (Math.round(journa_datas.nb_nor / j_tot * 10000)) / 100;
+         const J_dis = (Math.round(journa_datas.nb_dis / j_tot * 10000)) / 100;
+         const journa_d = [J_norm, J_dis, J_cut];
+         const journa_label = ["OK", "Ping > 100", "Coupures"];
+         const journa_opt = {
+
+         }
+         journa_canvas.parentNode.setAttribute("data-norm", `${J_norm}`);
+         const chart_journa = new Chart(journa_canvas, {
+            type: "doughnut",
+            data: {
+               labels: journa_label,
+               datasets: [{
+                  label: "test",
+                  data: journa_d,
+                  backgroundColor: dis_options.backgroundColor,
+                  borderWidth: 0
+               }]
+            },
+            options: {
+               title: "Taux de perturbation sur 7 jours",
+               legend: {
+                  position: "bottom",
+                  align: "center"
+               }
+            }
+         })
+
+         const chart_canvas = document.getElementById("chart_hosts")
+         const hosts_entries = JSON.parse(`<%-JSON.stringify(datas.hosts)%>`);
+         const hosts_total = hosts_entries.reduce((a, b) => { return a + b.nb }, 0)
+         const hosts_labels = hosts_entries.map(v => v.host)
+         const hosts_datas = hosts_entries.map(v => Math.max(0.1, Math.round(v.nb / hosts_total * 10000) / 100))
+         const hosts_colors = hosts_datas.map(v => `rgb(${Math.random() * 255},${Math.random() * 255}, ${Math.random() * 255})`);
+         const chart_hosts = new Chart(chart_canvas, {
+            type: "horizontalBar",
+            data: {
+               labels: hosts_labels,
+               datasets: [{
+                  label: "Pourcentage d'utilisation",
+                  data: hosts_datas,
+                  backgroundColor: hosts_colors,
+                  borderWidth: 0
+               }]
+            },
+            options: {
+               legend: {
+                  position: "top"
+               },
+               scales: {
+                  xAxes: [{
+                     ticks: {
+                        type: 'logarithmic',
+                        beginAtZero: true
+                     }
+                  }]
+               }
+            },
+            plugins: {
+               legends: {
+                  position: "right"
+               }
+            }
+         })
+      }
+
+</script>

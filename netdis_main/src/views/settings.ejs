@@ -1,0 +1,266 @@
+<div class="pannels settings">
+   <div class="p6" style="text-align: center;font-size: 1.5em; line-height: 2em;">
+      Attention. <br>
+      Les paramètres disponibles sur cette page peuvent affecter l'affichage et les performances du site.<br>
+      Afin d'éviter tout problème, il est conseillé de définir ces paramètres à des niveaux acceptables. <br>
+      Les paramètres par défaut sont optimisés pour vérifier votre connexion de manière optimale tout en minimisant les
+      coûts d'affichage et de
+      stockage.<br>
+      Nous vous remercions de votre confiance et de l'utilisation de notre service.
+   </div>
+   <div class="pannel p3">
+      <h3 class="title  panel-title">Clés d'état réseau</h3>
+      <p>Avec les paramètres enregistrés ci-dessous, ce tracker va générer :
+      </p>
+      <div class="pannels">
+         <div class="p1">1 heure</div>
+         <div class="p1">1 jour</div>
+         <div class="p1">1 mois</div>
+         <div class="p1">3 mois</div>
+         <div class="p1">1 an</div>
+         <div class="p1">10 ans</div>
+         <div class="p1">
+            <%=new Intl.NumberFormat("fr",{ notation: "compact" , style: "unit" , unit: "byte" , unitDisplay: "narrow" ,
+               }).format((60/(datas.keys.frequency/1000))*60*27*0.976)%>
+         </div>
+         <div class="p1">
+            <%=new Intl.NumberFormat("fr",{ notation: "compact" , style: "unit" , unit: "byte" , unitDisplay: "narrow" ,
+               }).format((60/(datas.keys.frequency/1000))*60*24*26.25*0.976)%>
+         </div>
+         <div class="p1">
+            <%=new Intl.NumberFormat("fr",{ notation: "compact" , style: "unit" , unit: "byte" , unitDisplay: "narrow" ,
+               }).format((60/(datas.keys.frequency/1000))*60*24*30*26.25*0.976)%>
+         </div>
+         <div class="p1">
+            <%=new Intl.NumberFormat("fr",{ notation: "compact" , style: "unit" , unit: "byte" , unitDisplay: "narrow" ,
+               }).format((60/(datas.keys.frequency/1000))*60*24*90*26.25*0.976).replace("Mdo", "Go" )%>
+         </div>
+         <div class="p1">
+            <%=new Intl.NumberFormat("fr",{ notation: "compact" , style: "unit" , unit: "byte" , unitDisplay: "narrow" ,
+               }).format((60/(datas.keys.frequency/1000))*60*24*365*26.25*0.976).replace("Mdo", "Go" )%>
+         </div>
+         <div class="p1">
+            <%=new Intl.NumberFormat("fr",{ notation: "compact" , style: "unit" , unit: "byte" , unitDisplay: "narrow" ,
+               }).format((60/(datas.keys.frequency/1000))*60*24*365*10*26.25*0.976).replace("Mdo", "Go" )%>
+         </div>
+      </div>
+      <form action="/settings/dashboard" method="post">
+         <label data-desc="Séparer les hôtes par une virgule (ex:google.be,google.eu,google.com)" for="key_host">Cible
+            des pings</label>
+         <input type="text" name="key_host" id="key_host" value="<%=datas.keys.host%>">
+         <label data-desc="Intervale en millisecondes" for="key_frequency">Fréquence entre chaque ping</label>
+         <input type="range" name="key_frequency" id="key_frequency" min="1000" max="20000" step="100"
+            value="<%=datas.keys.frequency%>" data-value="<%=datas.keys.frequency%>">
+         <label data-desc="Nombre de barres affichées sur le dashboard" for="maxbar">Entrées max en <abbr
+               title="Temps réel">TR</abbr></label><input type="number" id="maxbar" name="maxbar"
+            value="<%=datas.keys.maxbar%>" min="20" max="1440" step="5">
+         <input type="submit" value="Changer les paramètres d'état" class="full button">
+      </form>
+   </div>
+   <div class="pannel p3">
+      <h2 class="title panel-title">Historique</h2>
+      <form action="/settings/history" method="post">
+         <label data-desc="Fusionne les entrées dans l'intervale donné" for="key_bph">Grouper par N minutes</label>
+         <input type="range" id="key_bph" name="key_bph" data-value="<%=datas.keys.barperhour??15%>"
+            value="<%=datas.keys.barperhour??15%>" min="1" max="60" step="1">
+         <label for="histype">
+            Algorithme d'affichage
+         </label>
+         <select name="histype" id="histype" value="<%=datas.keys.histype ?? 'moyenne'%>">
+            <option <%=datas.keys.histype=="moyenne" ?"selected":""%> value="moyenne">Moyenne</option>
+            <option <%=datas.keys.histype=="mediane" ?"selected":""%> value="mediane">Mediane</option>
+            <option <%=datas.keys.histype=="min" ?"selected":""%> value="min">Min</option>
+            <option <%=datas.keys.histype=="max" ?"selected":""%> value="max">Max</option>
+            <option <%=datas.keys.histype=="somme" ?"selected":""%> value="somme">Somme</option>
+         </select>
+         <label for="htype" data-desc="Cache les heures inactives si `ignore les temps vide`">Mode
+            d'affichage</label>
+         <select name="htype" id="htype">
+            <option <%=datas.keys.hdisplaytype=="complet" ?"selected":""%> value="complet">Complet</option>
+            <option <%=datas.keys.hdisplaytype=="concat" ?"selected":""%> value="concat">Ignore temps vide</option>
+         </select>
+         <label for="key-h-start-date">Date de départ</label>
+         <input type="datetime-local" name="key_h_start_date" id="key-h-start-date"
+            value="<%=functions.formatDateTime(datas.keys.hstartdate)%>">
+         <label for="key-h-end-date">Date de fin</label>
+         <input type="datetime-local" name="key_h_end_date" id="key-h-end-date"
+            value="<%=functions.formatDateTime(datas.keys.henddate)%>">
+         <label class="">Choix rapide</label>
+         <div class="choice_btns">
+            <input class="button bt2" type="button" onclick="changeDate(this,'m-1')" value="M-1">
+            <input class="button bt2" type="button" onclick="changeDate(this,'m')" value="M">
+            <input class="button bt2" type="button" onclick="changeDate(this,'j-30')" value="J-30">
+            <input class="button bt2" type="button" onclick="changeDate(this,'j-7')" value="J-7">
+            <input class="button bt2" type="button" onclick="changeDate(this,'j-1')" value="J-1">
+            <input class="button bt2" type="button" onclick="changeDate(this,'j')" value="J">
+            <input class="button bt2" type="button" onclick="changeDate(this,'h-12', 'concat')" value="H-12">
+            <input class="button bt2" type="button" onclick="changeDate(this,'h-1', 'concat')" value="H-1">
+            <input class="button bt2" type="button" onclick="changeDate(this,'h', 'concat')" value="H">
+         </div>
+         <fieldset>
+            <legend class="p6">Ignorer sous N minutes</legend>
+            <label for="homit1"
+               data-desc="Ignore les latences ayant une durée inférieure à N. (0:Afficher tout)">Latences</label>
+            <input type="number" name="homit1" id="homit1" min="0" max="10" value="<%=datas.keys.homit1||1%>">
+            <label for="homit2"
+               data-desc="Ignore les coupures ayant une durée inférieure à N. (0:Afficher tout)">Coupures</label>
+            <input type="number" name="homit2" id="homit2" min="0" max="10" value="<%=datas.keys.homit2||1%>">
+         </fieldset>
+         <input type="submit" value="Modifier l'affichage historique" class="full button">
+      </form>
+   </div>
+   <div class="pannel p3">
+      <h2 class="title panel-title">Compte admin</h2>
+      <form action="/settings/admin" method="post">
+         <label for="name">Identifiant</label><input type="text" name="name" id="name" placeholder="Identifiant admin"
+            value="<%=datas.keys.adminName%>">
+         <fieldset class="form-passwords">
+            <legend class="p6">Mot de passe</legend>
+            <label for="pass">Actuel</label><input type="password" name="pass" id="pass"
+               placeholder="Mot de passe admin actuel" required>
+            <label for="pass1">Nouveau</label><input type="password" name="pass1" id="pass1"
+               placeholder="Nouveau mot de passe admin" required>
+            <label for="pass2">Confirmation</label><input type="password" name="pass2" id="pass2"
+               placeholder="Confirmation mot de passe admin" required>
+         </fieldset>
+         <input type="submit" value="Modifier compte admin" class="full button">
+      </form>
+   </div>
+   <div class="pannel p3">
+      <h2 class="title panel-title">Personnalisation</h2>
+      <form action="/settings/site" method="post">
+         <div class="">
+            <label data-desc="Panneaus, fond plus clair" for="cmain">Couleur principale</label><input
+               data-default="#202743" type="color" name="cmain" id="cmain" value="<%=datas.keys.cmain%>">
+            <label data-desc="Fond du site, couleur foncée" for="cmaindark">Couleur principale sombre</label><input
+               data-default="#141930" type="color" name="cmaindark" id="cmaindark" value="<%=datas.keys.cmaindark%>">
+         </div>
+         <div class="">
+            <label data-desc="Textes, élément clair" for="cmainlight">Couleur principale claire</label><input
+               data-default="#f2f2f2" type="color" name="cmainlight" id="cmainlight" value="<%=datas.keys.cmainlight%>">
+         </div>
+         <div class="">
+            <label data-desc="Accentuation, fond foncé des boutons, bordures graph" for="csecuno">Couleur secondaire
+               n°1</label>
+            <input data-default="#f40000" type="color" name="csecuno" id="csecuno" value="<%=datas.keys.csecuno%>">
+            <label data-desc="Accentuation, fond clair des boutons, fond graph" for="csecduo">Couleur secondaire
+               n°2</label>
+            <input data-default="#f53d8d" type="color" name="csecduo" id="csecduo" value="<%=datas.keys.csecduo%>">
+            <label data-desc="Accentuation, erreurs, coupures" for="csectrio">Couleur secondaire
+               n°3</label>
+            <input data-default="#6b0000" type="color" name="csectrio" id="csectrio" value="<%=datas.keys.csectrio%>">
+         </div>
+         <input type="submit" value="Modifier le style du site" class="full button">
+         <input class="button" type="button" value="Reset" onclick="resetForm(this)">
+      </form>
+   </div>
+   <div class="pannel p3">
+      <form action="/settings/backupDb" method="post">
+         <input type="hidden" name="tback" value="asking backup">
+         <input type="submit" value="test backup">
+      </form>
+      <button
+         onclick="if(confirm(`Attention, purger la base de donnée va supprimer toutes données existantes, pensez à faire une sauvegarde à l'aide du boutton backup`)){fetch('/settings/purgeDb',{method:'post'})}">Purger</button>
+      <p class="title">Dernier backups</p>
+      <ul class="pannels">
+         <% datas.backups.reverse().forEach((backup, i)=> { %>
+            <li class="p2">
+               <%=i+1%>.
+                  <%=functions.formatDateTime(parseInt(backup.split("db_")[1].split(".json")[0], 36)).split("T").join(" ")%>
+               </li>
+               <% }) %>
+      </ul>
+
+   </div>
+</div>
+<script>
+   const hdsiptype = document.getElementById(" htype"); function resetForm(el) {
+      const form = el.closest("form"); const
+         inputs = form.querySelectorAll("input"); inputs.forEach(input => {
+            const data_default = input.getAttribute("data-default");
+            if (!data_default) return
+            input.value = data_default
+         })
+   }
+   function pad2(n) {
+      const str = n?.toString();
+      return str.padStart(2, "0");
+   }
+   function yy(d) {
+      return d.getFullYear();
+   }
+   function mm(d) {
+      return d.getMonth();
+   }
+   function dd(d) {
+      return d.getDate();
+   }
+   function hh(d) {
+      return d.getHours();
+   }
+   function mi(d) {
+      return d.getMinutes();
+   }
+
+   function changeDate(el, type, ht = "complet") {
+      let d = new Date()
+      let date1;
+      let date2;
+      switch (type) {
+         case "m-1":
+            date1 = new Date(yy(d), mm(d) - 1, 1);
+            date2 = new Date(yy(d), mm(d), 1);
+            break;
+         case "m":
+            date1 = new Date(yy(d), mm(d), 1);
+            date2 = new Date(yy(d), mm(d) + 1, 1);
+            break;
+         case "j-30":
+            date1 = new Date(yy(d), mm(d), dd(d) - 30);
+            date2 = new Date(yy(d), mm(d), dd(d) + 1);
+            break;
+         case "j-7":
+            date1 = new Date(yy(d), mm(d), dd(d) - 6);
+            date2 = new Date(yy(d), mm(d), dd(d) + 1);
+            break;
+         case "j-1":
+            date1 = new Date(yy(d), mm(d), dd(d) - 1);
+            date2 = new Date(yy(d), mm(d), dd(d) + 1);
+            break;
+         case "j":
+            date1 = new Date(yy(d), mm(d), dd(d));
+            date2 = new Date(yy(d), mm(d), dd(d) + 1);
+            break;
+
+         case "h-12":
+            date1 = new Date(yy(d), mm(d), dd(d), hh(d) - 12);
+            date2 = new Date(yy(d), mm(d), dd(d), hh(d) + 1);
+            break;
+         case "h-1":
+            date1 = new Date(yy(d), mm(d), dd(d), hh(d) - 1);
+            date2 = new Date(yy(d), mm(d), dd(d), hh(d) + 1);
+            break;
+
+         case "h":
+            date1 = new Date(yy(d), mm(d), dd(d), hh(d));
+            date2 = new Date(yy(d), mm(d), dd(d), hh(d) + 1);
+            break;
+         default:
+            break;
+      }
+      const htype = document.getElementById("htype")
+      const inp_d_start = document.getElementById("key-h-start-date");
+      const inp_d_end = document.getElementById("key-h-end-date");
+      htype.value = `${ht}`;
+
+      inp_d_start.value = format(date1)
+      inp_d_end.value = format(date2)
+   }
+   function p(x) {
+      return x.toString().padStart(2, "0");
+   }
+   function format(d) {
+      return `${yy(d)}-${p(mm(d) + 1)}-${p(dd(d))}T${p(hh(d))}:00:00`
+   }
+
+</script>

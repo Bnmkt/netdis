@@ -1,0 +1,108 @@
+.sr-only {
+   position: absolute;
+   top: -30em;
+}
+table.sortable{
+   width: 100%;
+}
+table.sortable td,
+table.sortable th {
+   text-align: center;
+   padding: .3em;
+   width: 8em;
+}
+
+table.sortable tr:has(td):hover{
+   background-color: rgba(255,255,255,.25)!important;
+}
+table.sortable tr:has(td){
+   transition: 350ms ease-in;
+}
+
+table.sortable th {
+   background-color: var(--secondary-uno);
+   font-weight: bold;
+   border-bottom: thin solid #888;
+   position: relative;
+   padding: 0;
+}
+
+table.sortable th:nth-child(5) {
+   width: 10em;
+}
+
+table.sortable th button {
+   transition: 350ms ease-in;
+   padding: 1em;
+   font-size: .8em;
+   font-weight: bold;
+   background: transparent;
+   border: none;
+   display: inline-block;
+   width: 100%;
+   text-align: center;
+   outline: none;
+   cursor: pointer;
+   color: var(--main-color-light) !important;;
+}
+
+table.sortable th.no-sort button span{
+   display: none!important;
+}
+
+table.sortable th button span {
+   position: absolute;
+   right: 1em;
+}
+
+table.sortable th[aria-sort="descending"] span::after {
+   content: "▼";
+   color: currentcolor;
+   font-size: 100%;
+   top: 0;
+}
+
+table.sortable th[aria-sort="ascending"] span::after {
+   content: "▲";
+   color: var(--main-color-light);
+   font-size: 100%;
+   top: 0;
+}
+
+table.show-unsorted-icon th:not([aria-sort]) button span::after {
+   content: "♢";
+   color: var(--main-color-light);
+   font-size: 100%;
+   position: relative;
+   top: -3px;
+   left: -4px;
+}
+
+table.sortable td.num {
+   text-align: right;
+}
+
+table.sortable tbody tr:nth-child(odd) {
+   background-color: #dddddd11;
+}
+
+/* Focus and hover styling */
+
+table.sortable th button:focus,
+table.sortable th button:hover,
+table.sortable th[aria-sort] button{
+   background-color: rgba(255,255,255,.2);
+}
+
+table.sortable th button:focus span,
+table.sortable th button:hover span {
+   right: 1em;
+}
+
+table.sortable th:not([aria-sort]) button:focus span::after,
+table.sortable th:not([aria-sort]) button:hover span::after {
+   content: "▼";
+   color: var(--main-color-light);
+   font-size: 100%;
+   top: 0;
+}

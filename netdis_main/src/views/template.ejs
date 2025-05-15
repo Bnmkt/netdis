@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>
+      <%=title%> - NetDis
+   </title>
+   <link rel="shortcut icon" href="/assets/ico.png" type="image/x-icon">
+   <link rel="stylesheet" href="/assets/reset.css">
+   <link rel="stylesheet" href="/assets/sorttable.css">
+   <link rel="stylesheet" href="/assets/styles.css">
+   <link rel="stylesheet" href="/assets/fa/all.min.css">
+   <link rel="stylesheet" href="/assets/fa/fontawesome.min.css">
+   <link rel="stylesheet" href="/assets/fa/solid.min.css">
+   <link rel="stylesheet" href="/assets/md.css">
+   <style>
+      :root {
+         --main-color: <%=datas.keys.cmain??"#202743" %>;
+         --main-color-dark: <%=datas.keys.cmaindark??"#141930" %>;
+         --main-color-light: <%=datas.keys.cmainlight??"#f2f2f2" %>;
+         --secondary-uno: <%=datas.keys.csecuno??"#f40000" %>;
+         --secondary-duo: <%=datas.keys.csecduo??"#f53d8d" %>;
+         --secondary-tri: <%=datas.keys.csectrio??"#f53d8d" %>;
+      }
+   </style>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"
+      integrity="sha512-EBLzUL8XLl+va/zAsmXwS7Z2B1F9HUHkZwyS/VKwh3S7T/U0nF4BaU29EP/ZSf6zgiIxYAnKLu6bJ8dqpmX5uw=="
+      crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/a11y-dark.min.css"
+      integrity="sha512-Vj6gPCk8EZlqnoveEyuGyYaWZ1+jyjMPg8g4shwyyNlRQl6d3L9At02ZHQr5K6s5duZl/+YKMnM3/8pDhoUphg=="
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+   <script src="/assets/chartjs-plugin-zoom.js"></script>
+   <script>
+
+      const isMobile = navigator?.userAgentData?.mobile;
+      function shrink_header(doShrink) {
+         const rp = document.querySelector("#reduce_pannel")
+
+         rp.checked = doShrink
+      }
+   </script>
+</head>
+
+<body>
+   <template id="tp_pannel">
+      <div class="pannel p3 rel">
+         <input type="checkbox" name="" class="hidden expand"
+            onload="shrink_header(window.localStorage.getItem('shrink-header') == 'true')">
+         <h3 class="title panel-title">Panneau</h3>
+         <div class="content"><canvas></canvas></div>
+         <div class="icons abs top right">
+            <label class="button " for=""><i class="fa-solid fa-expand reduced"></i><i
+                  class="fa-solid fa-compress expanded"></i></label>
+            <a href="#" title="Télécharger le graphique" class="button" data-action="dl-canvas"><i
+                  class="fa-solid fa-file-arrow-down"></i></a>
+         </div>
+         <div class="table">
+            <details>
+               <summary>Détail de la journée (<span class="sum-entries"></span> entrées)</summary>
+               <div class="table-wrap">
+                  <table class="sortable">
+                     <thead>
+                        <tr>
+                           <th class="col-type">
+                              <button>
+                                 État
+                                 <span aria-hidden="true"></span>
+                              </button>
+                           </th>
+                           <th>
+                              <button>
+                                 Debut
+                                 <span aria-hidden="true"></span>
+                              </button>
+                           </th>
+                           <th>
+                              <button>
+                                 Fin
+                                 <span aria-hidden="true"></span>
+                              </button>
+                           </th>
+                           <th class="num">
+                              <button>
+                                 Durée
+                                 <span aria-hidden="true"></span>
+                              </button>
+                           </th>
+                           <th class="num">
+                              <button>
+                                 Moyenne
+                                 <span aria-hidden="true"></span>
+                              </button>
+                           </th>
+                           <th class="num">
+                              <button>
+                                 Pic
+                                 <span aria-hidden="true"></span>
+                              </button>
+                           </th>
+                        </tr>
+                     </thead>
+                     <tbody>
+
+                     </tbody>
+                  </table>
+               </div>
+            </details>
+         </div>
+      </div>
+   </template>
+   <div id="app">
+      <header id="heading_panel">
+         <input type="checkbox" class="hidden" name="reduce_pannel" id="reduce_pannel">
+         <label for="reduce_pannel" class="reduce_pannel" class="" data-action="shrink-header"><i
+               class="rotate-180 fa-solid fa-arrow-right-from-bracket"></i></label>
+         <h2 class="title big-title"><span class="desk">NetDis</span><i class="fa-solid fa-chart-simple mob"></i></h2>
+         <ul id="menu">
+            <li class="menu_element">
+               <a href="/" class="link menu_link"><i class="fa-solid fa-house icon"></i><span
+                     class="link_text">&nbsp;Tableau de bord</span></a>
+            </li>
+            <li class="menu_element">
+               <a href="/history" class="link menu_link"><i class="fa-solid fa-calendar icon"></i><span
+                     class="link_text">&nbsp;Historique</span></a>
+            </li>
+            <li class="menu_element">
+               <a href="/settings" class="link menu_link"><i class="fa-solid fa-gear icon"></i><span
+                     class="link_text">&nbsp;Paramètres</span></a>
+            </li>
+            <li class="menu_element last fixed bottom">
+               <a class="button" href="/about">Support</a>
+            </li>
+         </ul>
+      </header>
+      <div class="pannel_group">
+         <main id="main_pannel">
+            <h2 class="title  big-title">
+               <%=title??"Dashboard"%>
+            </h2>
+            <%- include(view); %>
+         </main>
+         <footer id="footer_pannel">
+            NetDis &copy; 2025
+         </footer>
+      </div>
+   </div>
+   <div class="page_load"></div>
+   <script src="/assets/main.js"></script>
+</body>
+
+</html>

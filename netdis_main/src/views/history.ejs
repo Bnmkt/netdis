@@ -1,0 +1,270 @@
+<p class="title">Du <span class="underline">
+      <%=functions.formatDateTime(datas.from).split("T").join(" ")%>
+   </span> à <span class=" underline">
+         <%=functions.formatDateTime(datas.to).split("T").join(" ")%>
+   </span> <a href=" /settings" class="link active"><i class="fa-solid fa-square-pen"></i> modifier</a>
+</p>
+<div class=" historiques">
+   <div class="pannels reverse"></div>
+</div>
+
+<script>
+
+   document.body.onload = () => {
+      tranche = parseInt(`<%=datas.bph ?? 15 %>`)
+      const freq = parseInt(`<%=datas.keys.frequency%>`);
+      const halertvalue = parseInt(`<%=datas.keys.halertvalue%>`);
+      const halert = (halertvalue) / (Math.max(3, (freq / 1000)) - 2)
+
+      const resultats = [];
+      const entries = JSON.parse(`<%-JSON.stringify(datas.history)%>`);
+      const dispType = `<%=datas.keys.hdisplaytype%>`
+      const histype = `<%=datas.keys.histype??"moyenne"%>`
+      const alertValue = ((halertvalue / 4) * -1) * (freq / 500)
+
+      const avg_entries = calculerStatistiqueParTranche(entries, tranche, histype, alertValue)
+
+      let nitem = 0;
+      const titem = Object.keys(avg_entries).length
+
+      for (const day in avg_entries) {
+         if (Object.prototype.hasOwnProperty.call(avg_entries, day)) {
+            nitem++;
+            const day_avg = avg_entries[day];
+
+            const tpl = document.querySelector("template#tp_pannel");
+            const tp_item = tpl.content.querySelector("div.pannel")
+            const item = document.importNode(tp_item, true)
+            const title = item.querySelector(".title")
+            title.innerText = `${day}`
+            const parent = document.querySelector(".historiques>.pannels");
+            parent.appendChild(item);
+            const el = title.closest("div.pannel")
+            const link = item.querySelector("a[data-action=dl-canvas]")
+            const cb = item.querySelector(".expand")
+            const cblabel = item.querySelector("label")
+            cb.setAttribute("id", `cb${day.split("/").join("")}`)
+            if (Object.keys(avg_entries).length == 1) cb.setAttribute("checked", "checked")
+            cblabel.setAttribute("for", `cb${day.split("/").join("")}`)
+            link.setAttribute("data-date", day)
+
+            el.style.order = `${titem - nitem}`;
+
+            const ctx = item.querySelector("canvas");
+            const tbody = item.querySelector("tbody");
+            const sentr = item.querySelector(".sum-entries");
+            const raw_labels = day_avg.map((v, i) => v !== null ? isIntValid(i) ? convertirEnHeure(i, tranche) || false : "??:??" : (dispType == "complet" ? convertirEnHeure(i, tranche) || false : null))
+            const raw_datas = day_avg.map((v, i) => (v > 0 || v === null) ? v ? (Math.round(v * 100) / 100).toString().padEnd(2, "0") : 0 : -5)
+            const concat_datas = Array.from(raw_datas).filter((v) => v != undefined)
+            const concat_labels = Array.from(raw_labels).filter(v => v != undefined)
+            let [datas, labels] = [raw_datas, raw_labels];
+            const list_perturbations_arr = analyserPerturbations(labels, datas)
+            const homitLat = parseInt(`<%= datas.keys.homit1 || 1 %>`)
+            const homitCut = parseInt(`<%= datas.keys.homit2 || 1 %>`)
+            console.log(day_avg);
+
+            const list_perturbations = list_perturbations_arr.filter(v => (v.duree >= homitLat || (v.duree >= homitCut && v.type == "coupure")))
+            const list_perturbations_ommit = list_perturbations_arr.filter(v => v.duree < homitLat && v.type == "latence")
+
+            if (dispType == "concat") [datas, labels] = [concat_datas, concat_labels];
+            const bg_norm = "<%=datas.keys.csecduo%>";
+            const bg_warn = "<%=datas.keys.csecuno%>";
+            const bg_err = "<%=datas.keys.csectrio%>";
+            const backgroundColor = datas.map(v => v > 0 ? v > halert ? bg_warn : bg_norm : bg_err)
+            function transformValue(value) {
+
+               if (value < 0) return value; // Garder les coupures négatives
+
+               // Définition des seuils et facteurs de compression
+               const linearLimit = 20;
+               const midLimit = 100;
+
+               const midCompression = 0.4;
+               const midFactor = 4;
+
+               const highCompression = 0.2;
+               const highFactor = 3;
+               const offset = 44; // Décalage pour assurer la continuité des valeurs
+
+               // Zone linéaire (0 - 20)
+               if (value <= linearLimit) return value;
+
+               // Zone compressée modérée (20 - 100)
+               if (value <= midLimit) {
+                  return linearLimit + ((value - linearLimit) ** midCompression) * midFactor;
+               }
+
+               // Zone compressée forte (> 100)
+               return offset + ((value - midLimit) ** highCompression) * highFactor;
+
+            }
+            function yAxisCallback(value) {
+               if (value < 0) return value; // Garder les coupures visibles
+
+               // Définition des mêmes seuils et facteurs
+               const linearLimit = 20;
+               const midLimit = 100;
+
+               const midCompression = 0.4;
+               const midFactor = 4;
+
+               const highCompression = 0.2;
+               const highFactor = 3;
+               const offset = 44;
+
+               // Zone linéaire (0 - 20)
+               if (value <= linearLimit) return value;
+
+               // Zone inverse de la compression modérée
+               if (value <= offset) {
+                  return Math.round(linearLimit + ((value - linearLimit) / midFactor) ** (1 / midCompression));
+               }
+
+               // Zone inverse de la compression forte
+               return Math.round(midLimit + ((value - offset) / highFactor) ** (1 / highCompression));
+            }
+
+            const options = {
+
+               backgroundColor: backgroundColor,
+               scales: {
+                  xAxes: [{
+                     ticks: {
+                        source: 'auto',
+                        autoSkip: true,
+                        maxTicksLimit: 24
+                     }
+                  }],
+                  yAxes: [{
+                     ticks: {
+                        display: false,
+                        type: 'linear',
+                        beginAtZero: true,
+                        suggestedMax: 50,
+                        min: -5,
+                        callback: yAxisCallback
+                     }
+                  }]
+               },
+               plugins: {
+
+                  decimation: {
+                     threshold: 100
+                  }
+               }
+            }
+
+            const chart = createGraph(ctx, datas.map(transformValue), labels, options)
+            if (sentr) sentr.innerHTML = `${list_perturbations.length}<span class="i sup"> / ${list_perturbations_arr.length}</span>`
+            list_perturbations.forEach(perturbation => {
+               const noeud = `
+               <td class="type-${perturbation.type} col-type" title="${perturbation.type}">
+                  ${perturbation.type == "latence" ? `<span class="hidden">0</span><i class="fa-solid fa-caret-up"></i>` : `<span class="hidden">1</span><i class="fa-solid fa-sort-down"></i>`}
+               </td>
+               <td>${perturbation.start}</td>
+               <td>${perturbation.end || perturbation.start}</td>
+               <td class="num">${perturbation.duree}</td>
+               <td class="num">${perturbation.average || "0"}</td>
+               <td class="num">${perturbation.pic || "0"}</td>
+               `
+               tbody.insertAdjacentHTML("beforeend", `<tr>${noeud}</tr>`)
+            });
+         }
+      }
+
+      function analyserPerturbations(heures, pings) {
+         let resultats = [];
+         let enCoupure = false, enLatence = false;
+         let startCoupure = null, startLatence = null;
+         let sommeLatence = 0, countLatence = 0, peakLatence = 0;
+
+         function calculerDuree(start, end) {
+            let [h1, m1] = start.split(":").map(Number);
+            let [h2, m2] = end ? end.split(":").map(Number) : [h1, m1];
+            return (h2 * 60 + m2) - (h1 * 60 + m1); // Durée en minutes
+         }
+
+         for (let i = 0; i < heures.length; i++) {
+            let heure = heures[i];
+            heure = heure?.split(":").map(v => Math.round(v).toString().padStart(2, "0")).join(":")
+
+            let valeur = parseInt(pings[i]);
+
+            // Gestion des coupures ("unknown")
+            if (valeur === "unknown" || valeur < 0) {
+               if (!enCoupure) {
+                  startCoupure = heure;
+                  enCoupure = true;
+               }
+            } else {
+               if (enCoupure) {
+                  resultats.push({
+                     type: "coupure",
+                     start: startCoupure,
+                     end: heure,
+                     duree: calculerDuree(startCoupure, heure),
+                     average: null,
+                     pic: null
+                  });
+                  enCoupure = false;
+               }
+            }
+
+            // Gestion des latences > 100 ms
+
+            if (typeof valeur == "number" && valeur > halert) {
+               if (!enLatence) {
+                  startLatence = heure;
+                  sommeLatence = valeur;
+                  countLatence = 1;
+                  peakLatence = valeur
+                  enLatence = true;
+               } else {
+                  sommeLatence += valeur;
+                  peakLatence = valeur > peakLatence ? valeur : peakLatence;
+                  countLatence++;
+               }
+            } else {
+               if (enLatence) {
+                  resultats.push({
+                     type: "latence",
+                     start: startLatence,
+                     end: heure,
+                     duree: calculerDuree(startLatence, heure),
+                     average: Math.round((sommeLatence / countLatence) * 100) / 100,
+                     pic: peakLatence
+                  });
+                  enLatence = false;
+               }
+            }
+         }
+
+         // Ajouter la dernière coupure ou latence si elle n'est pas encore fermée
+         if (enCoupure) {
+            resultats.push({
+               type: "coupure",
+               start: startCoupure,
+               end: heures[heures.length - 1],
+               duree: calculerDuree(startCoupure, heures[heures.length - 1]),
+               average: null,
+               pic: null
+            });
+         }
+
+         if (enLatence) {
+            resultats.push({
+               type: "latence",
+               start: startLatence,
+               end: heures[heures.length - 1],
+               duree: calculerDuree(startLatence, heures[heures.length - 1]),
+               average: Math.round((sommeLatence / countLatence) * 100) / 100,
+               pic: null
+            });
+         }
+
+         return resultats;
+      }
+   }
+
+</script>
+<script src="/assets/sorttable.js"></script>
